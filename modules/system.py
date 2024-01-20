@@ -1,12 +1,14 @@
-import os, json, subprocess, glob
+import os, json, subprocess, glob, random
 from user import User
 from ca import CA
 from OpenSSL import crypto
 from dotenv import load_dotenv
 from getpass import getpass
 from datetime import datetime
+from Crypto.Cipher import AES
 
 load_dotenv()
+nextint = random.randint(1, 99999999)
 
 class System:
     def register_user() -> User:
@@ -31,7 +33,7 @@ class System:
             if passwd != pwd_verification:
                 print("Passwords not matching, please try again.")
                 
-        # Generate an RSA key pair (AES-256 encryption standard)
+        # Generate an RSA key pair (AES-128 encryption standard)
         userkey = crypto.PKey()
         userkey.generate_key(crypto.TYPE_RSA, 2048)
         
@@ -187,9 +189,16 @@ class System:
         with open(f"{user_folder}/notifications.json", 'r') as f:
             notifications = json.load(f)
                     
+        
+        # Decrypt content into temp file
+        # target_file = System.decrypt(f'{user_folder}/history.json', encrypted=True)
+        
         # Parse ciphering history
-        with open(f"{user_folder}/history.json", 'r') as f:
+        with open(f'{user_folder}/history.json', 'r') as f:
             history = json.load(f)
+            
+        # Remove tempfile
+        # os.remove(target_file)
         
         return User(username, history, notifications)
         
@@ -245,3 +254,50 @@ class System:
         # Dump the newly-updated JSON container
         with open(f"{userfolder}/notifications.json", 'w') as f:
             json.dump(ctr, f)
+        
+    @staticmethod
+    def encrypt(plaintext: str, file_path: str, encrypt=True) -> str:       
+        if encrypt == True: 
+            # Define script location
+            script = f'{os.getenv("ROOT_DIR")}/{os.getenv("SCRIPTS_DIR")}/encrypt.sh'
+            
+            # Create temporary file with plaintext
+            global nextint
+            nextint += 1
+            tmp = f'{os.getenv("ROOT_DIR")}/{os.getenv("CACHED_DIR")}/temp{nextint}.tmp'
+            
+            with open(tmp, 'w') as f:
+                f.write(plaintext)
+            
+            # Execute encrypt shellscript
+            subprocess.run([script, "".join(tmp), "".join(file_path), '-aes-256-cbc', 'SGRNST'])
+            
+            # Cleanup tempfiles
+            os.remove(tmp)
+        else:
+            # Don't encrypt, just save plaintext into file_path
+            with open(file_path, 'w') as f:
+                f.write(plaintext)            
+    
+        # Return the file path (not necessary)
+        return file_path
+        
+    @staticmethod
+    def decrypt(file_path: str, encrypted=True) -> str:
+        if encrypted == True:
+            # Define script location
+            script = f'{os.getenv("ROOT_DIR")}/{os.getenv("SCRIPTS_DIR")}/decrypt.sh'
+            
+            # Define a tempfile to decrypt into
+            global nextint
+            nextint += 1
+            tmp = f'{os.getenv("ROOT_DIR")}/{os.getenv("CACHED_DIR")}/temp{nextint}.tmp'
+            
+            # Since file_path represents an encrypted file, we must decrypt it first
+            subprocess.run([script, "".join(file_path), "".join(tmp), '-aes-256-cbc', 'SGRNST'])
+                    
+            # Return equivalent decrypted file
+            return tmp
+        else:
+            # Not encrypted, just return file_path
+            return file_path
