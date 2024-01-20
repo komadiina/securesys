@@ -1,0 +1,3 @@
+pyOpenSSL==23.3.0
+pyOpenSSL==23.3.0
+python-dotenv==1.0.0
