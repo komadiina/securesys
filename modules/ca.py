@@ -1,4 +1,4 @@
-import os, utils, json
+import os, utils, json, datetime
 from OpenSSL import crypto
 from dotenv import load_dotenv
 
@@ -50,13 +50,18 @@ class CA:
         return newcert
     
     @staticmethod
-    def authorize(cert: crypto.X509) -> bool:
+    def authorize(cert: crypto.X509) -> (bool, str):
         # Certificate must not be expired
         if cert.has_expired():
-            return False
+            return (False, "Certificate has expired")
         
         # Certificate must not be revoked 
         # TODO (simple crl)
+        
+        crl: crypto.CRL = CA.load_crl()
+        for r in crl.get_revoked():
+            if r.get_serial() == cert.get_serial_number():
+                return (False, f"Certificate has been revoked (reason: {r.get_reason()})")
         
         # Load the CA certificate        
         ca: CA = CA()
@@ -64,4 +69,34 @@ class CA:
             ca_cert = crypto.load_certificate(crypto.FILETYPE_PEM, cafile.read())
         
         # Verify the authenticity of given certificate
-        return ca_cert.get_subject() == cert.get_issuer()
+        if ca_cert.get_subject() != cert.get_issuer():
+            return (False, "Certificate has not been issued by local CA")
+
+        return (True, None)    
+    
+    @staticmethod
+    def revoke(cert: crypto.X509, reason: bytes = None):
+        # Instantiate a revoked X509 certificate 
+        revoked = crypto.Revoked()
+        revoked.set_serial(cert.get_serial_number())
+        revoked.set_rev_date(datetime.datetime.utcnow().strftime("%y%m%d%H%M%SZ")) # ASN.1 format
+        revoked.set_reason(reason)
+        
+        # Load current CRL
+        crl = CA.load_crl()
+        crl.add_revoked(revoked)
+        
+        # Do not double-revoke (zero logic)
+        for r in crl.get_revoked():
+            if r.get_serial() == cert.get_serial_number():
+                return
+        
+        # Save CRL
+        crl_path = f'{os.getenv("ROOT_DIR")}/{os.getenv("CRL")}'
+        with open(crl_path, 'wb') as f:
+            f.write(crypto.dump_crl(crypto.FILETYPE_PEM, crl))
+    
+    @staticmethod
+    def load_crl() -> crypto.CRL:
+        crl_path = f'{os.getenv("ROOT_DIR")}/{os.getenv("CRL")}'
+        return crypto.load_crl(crypto.FILETYPE_PEM, crl_path)        

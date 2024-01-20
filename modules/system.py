@@ -99,14 +99,23 @@ class System:
         
     def user_logon() -> None:
         # Prompt user for certificate
-        crt_path = input("Please define the path to your certificate file: ")
+        crt_path = input("Please define the path to your certificate file (omit / at beginning, to use certificates from ./certs/ folder): ")
+        if crt_path.startswith('/') == False:
+            crt_path = f'{os.getenv("ROOT_DIR")}/{os.getenv("CERTS_FOLDER")}/{crt_path}'
+        
+        # Check if certificate exists
+        if os.path.exists(crt_path) == False:
+            print(f"Given certificate (full path: {crt_path}) could not be located. Exiting...")
+            return    
+        
         with open(crt_path, 'rb') as f:
             crt = crypto.load_certificate(crypto.FILETYPE_PEM, f.read())
             
         # User certificate authentication 
         # Criteria: valid CA, not expired
-        if CA.authorize(crt) == False:
-            print("[!!!] Unable to authenticate given certificate, exiting.")
+        result = CA.authorize(crt)
+        if result[0] == False:
+            print(f"Unable to authorize the provided certificate, reason: {result[1]}")
             return
         
         # User verified OK, prompt for credentials
@@ -135,7 +144,7 @@ class System:
         # Redirect the user to workspace
         user.dashboard()
         
-        # TODO: Save user data
+        # Save user data
         System.save_userdata(user)
         
     def save_userdata(user: User):

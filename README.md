@@ -14,7 +14,7 @@ The system is organized into several modules:
 - [`user.py`](command:_github.copilot.openSymbolInFile?%5B%22modules%2Fsystem.py%22%2C%22user.py%22%5D "modules/system.py"): Defines the User class for creating and managing users.
 - `utils.py`: Contains utility functions used throughout the system.
 
-The [`res/`](command:_github.copilot.openRelativePath?%5B%22res%2F%22%5D "res/") directory contains user-specific data, including encryption history and notifications. The [`certs/`](command:_github.copilot.openRelativePath?%5B%22certs%2F%22%5D "certs/") directory stores the digital certificates of users, and the [`requests/`](command:_github.copilot.openRelativePath?%5B%22requests%2F%22%5D "requests/") directory holds the Certificate Signing Requests (CSR) of users.
+The [`res/`](command:_github.copilot.openRelativePath?%5B%22res%2F%22%5D "res/") directory contains user-specific data, including encryption history and notifications. The [`certs/`](command:_github.copilot.openRelativePath?%5B%22certs%2F%22%5D "certs/") directory stores the digital certificates of users, and the [`requests/`](command:_github.copilot.openRelativePath?%5B%22requests%2F%22%5D "requests/") directory holds the Certificate Signing Requests (CSR) of users. The [`cached/`](command:_github.copilot.openRelativePath?%5B%22cached%2F%22%5D "cached/") directory contains the current user key-pair, as well as his certificate.
 
 ## Usage
 
