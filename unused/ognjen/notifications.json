@@ -1,0 +1,14 @@
+{
+    "notifications": [
+        {
+            "read": "False",
+            "date": "22:19 19/01/2024",
+            "content": "Test sample"
+        },
+        {
+            "read": "False",
+            "date": "22:20 19/01/2024",
+            "content": "Test sample 2"
+        }
+    ]
+}

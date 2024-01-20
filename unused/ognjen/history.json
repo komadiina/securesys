@@ -1,0 +1,10 @@
+{
+    "entry_history": [
+        {
+            "algorithm": "RFC",
+            "key": "2",
+            "plaintext": "asdfgh",
+            "ciphertext": "adgsfh"
+        }
+    ]
+}

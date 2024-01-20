@@ -1,0 +1,1 @@
+{"entry_history": [{"algorithm": "RFC", "key": "2", "plaintext": "asdfgh", "ciphertext": "adgsfh"}, {"algorithm": "Playfair", "key": "ognjen", "plaintext": "testtest", "ciphertext": "uituuitu"}, {"algorithm": "Playfair", "key": "ognjen", "plaintext": "testtest", "ciphertext": "uituuitu"}]}

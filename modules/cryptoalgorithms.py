@@ -1,8 +1,7 @@
-from abc import ABC, abstractmethod
-import numpy as np
-from OpenSSL import SSL, crypto
-import re
-from enum import Enum
+import re, utils
+from abc import abstractmethod
+from math import ceil
+
 
 class Cryptoalg:
     def __init__(self, parameters: dict={}):
@@ -22,6 +21,9 @@ class Cryptoalg:
     
     def set_parameters(self, new_params: dict):
         self.parameters = new_params
+        
+
+    
         
 class RFC(Cryptoalg):
     def __init__(self, parameters: dict):
@@ -73,7 +75,6 @@ class Myszkowski(Cryptoalg):
         i = 0 # 0-indexing, instead of 1-indexing
         enumeration_map = dict()
         for k in sorted_key:
-            print(k)
             enumeration_map[k] = i
             i += 1
             
@@ -84,16 +85,47 @@ class Myszkowski(Cryptoalg):
         
         return enumeration_list
         
-    def encrypt(self, plaintext: str) -> str:
+    def encrypt(self, plaintext: str, pad=True, padding: str = 'x') -> str:
+        # keyschedule
         key = self.parameters["key"]
         key_enumerated = self.__enumerate_key(key)
+        
+        # prep plaintext (remove spaces, optional but yea)
+        plaintext = plaintext.replace(' ', '')
+
+        # additional post-calculated parameters
         num_cols = len(key_enumerated)
-        num_rows = len(plaintext) // num_cols
-        print(f'({}')
+        num_rows = ceil(len(plaintext) / num_cols)
         
-        # print(key_enumerated)
-        
-        
+        # Pad with nullchars if needed
+        if pad:
+            remainder = num_cols * num_rows - len(plaintext)
+            
+            if remainder:
+                print(f'Padding with amount={remainder} character={padding}')
+                for i in range(remainder):
+                    plaintext += padding
+
+        # Fill the matrix
+        matrix = list()
+        i = 0
+        while i < len(plaintext):
+            matrix.append(list(plaintext[i:num_cols + i]))
+            i += num_cols
+
+                
+        # Read out the cipher
+        # ===================
+        # this algorithm was made by o(n^2) gang
+        # ===================
+        i = 0
+        cipher = ''
+        while i <= max(key_enumerated):
+            cipher += utils.get_matrix_cols_parallel(matrix=matrix, 
+                                                    indices=utils.get_matching_indices(key_enumerated, i))
+            i += 1
+            
+        return cipher            
     
     def decrypt(self, cipthertext: str) -> str:
         pass
@@ -105,10 +137,6 @@ class Playfair(Cryptoalg):
         # Initialize matrix right away
         self.__prepare_matrix(self.parameters["key"])
         
-    def __split(self, list, parts):
-        k, m = divmod(len(list), parts)
-        return (list[i*k+min(i, m):(i+1)*k+min(i+1, m)] for i in range(parts))
-    
     def preprocess(self, key):
         # remove duplicate letters
         key = key.replace('j', 'i')
@@ -127,7 +155,7 @@ class Playfair(Cryptoalg):
                 continue
 
         self.matrix = list(key) + self.matrix
-        self.matrix = list(self.__split(self.matrix, 5))
+        self.matrix = list(utils.split(self.matrix, 5))
     
     def __matrixfindpos(self, letter) -> (int, int):
         for x in range(len(self.matrix)):
@@ -173,7 +201,7 @@ class Playfair(Cryptoalg):
         cipher = ''
     
         # Split plaintext into pairs
-        plaintext = list(self.__split(plaintext, len(plaintext) // 2))
+        plaintext = list(utils.split(plaintext, len(plaintext) // 2))
         
         # Encrypt
         for (first, second) in plaintext:
